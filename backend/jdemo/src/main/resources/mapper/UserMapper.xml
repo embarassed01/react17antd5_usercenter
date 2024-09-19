@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org/DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.demo.mapper.UserMapper">
+
+    <resultMap type="com.example.demo.model.User" id="BaseResultMap">
+       <id column="id" jdbcType="BIGINT" property="id"/>
+       <id column="username" jdbcType="VARCHAR" property="username"/>
+       <id column="userAccount" jdbcType="VARCHAR" property="userAccount"/>
+       <id column="avatarUrl" jdbcType="VARCHAR" property="avatarUrl"/>
+       <id column="gender" jdbcType="TINYINT" property="gender"/>
+       <id column="userPassword" jdbcType="VARCHAR" property="userPassword"/>
+       <id column="phone" jdbcType="VARCHAR" property="phone"/>
+       <id column="email" jdbcType="VARCHAR" property="email"/>
+       <id column="userStatus" jdbcType="INTEGER" property="userStatus"/>
+       <id column="createTime" jdbcType="TIMESTAMP" property="createTime"/>
+       <id column="updateTime" jdbcType="TIMESTAMP" property="updateTime"/>
+       <id column="isDelete" jdbcType="TINYINT" property="isDelete"/>
+       <id column="userRole" jdbcType="INTEGER" property="userRole"/>
+       <id column="planetCode" jdbcType="VARCHAR" property="planetCode" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,username,userAccount,
+        avatarUrl,gender,userPassword,
+        phone,email,userStatus,userRole,
+        createTime,updateTime,isDelete,
+        planetCode
+    </sql>
+
+</mapper>
