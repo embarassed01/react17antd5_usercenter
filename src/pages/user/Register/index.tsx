@@ -23,7 +23,7 @@ const Register: React.FC = () => {
     try {
       // 注册
       const id = await register(values);
-      if (id > 0) {
+      if (id) {  // !null
         const defaultLoginSuccessMessage = '注册成功！';
         message.success(defaultLoginSuccessMessage);
 
@@ -36,7 +36,8 @@ const Register: React.FC = () => {
         });
         return;
       } else {
-        message.error('注册失败，请重试！(账户或星球编号重复）');
+        //message.error('注册失败，请重试！(账户或星球编号）');
+        // throw new Error(res.description);
       }
     } catch (error: any) {
       const defaultLoginFailureMessage = '注册失败，请重试！';

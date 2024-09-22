@@ -56,6 +56,14 @@ declare namespace API {
     status?: string;
   };
 
+  // 用于对接后端的通用返回类
+  type BaseResponse<T> = {
+    code: number;
+    data: T;
+    message: string;
+    description: string;
+  };
+
   type LoginParams = {
     userAccount?: string;
     userPassword?: string;

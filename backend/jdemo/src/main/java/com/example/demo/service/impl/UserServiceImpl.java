@@ -10,7 +10,9 @@ import org.springframework.util.DigestUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.demo.common.ErrorCode;
 import com.example.demo.constant.UserConstant;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
@@ -40,40 +42,41 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 1. 校验 
         if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword, planetCode)) {
             // todo 修改为自定义异常
-            return -1;
+            // 注意：抛出异常就会中断了，就会返回了，不会再继续执行了
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
         if (userPassword.length() < 8 || checkPassword.length() < 8) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
         if (planetCode.length() > 5) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号过长");
         } 
         // 账户不能包含特殊字符 [正则表达式]列出所有的特殊符号，只要能找到就不符合
         String validPattern = "[!@#\\$%\\^&*()_+\\-=\\{\\}\\[\\]:\";'\\,\\.\\?/\\\\\\|]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号不能包含特殊字符");
         }
         // 密码和校验密码相同
         if (!userPassword.equals(checkPassword)) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码和校验密码不相同");
         }
         // 账户不能重复  查询了一次数据库, 应该放在最后面，节省数据库资源占用
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("userAccount", userAccount);
         long count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号不能重复");
         }
         // 星球编号不能重复
         queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("planetCode", planetCode);
         count = userMapper.selectCount(queryWrapper);
         if (count > 0) {
-            return -1;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "星球编号不能重复");
         }
         // 2. 加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -84,7 +87,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         user.setPlanetCode(planetCode);
         boolean saveResult = this.save(user);
         if (!saveResult) {  // Long->long解箱，可能有问题，因为null返回就会报错
-            return -1;
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "保存用户数据出错");
         }
         return user.getId();
     }
@@ -93,18 +96,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     public User doLogin(String userAccount, String userPassword, HttpServletRequest request) {
         // 1.校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
         if (userPassword.length() < 8) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
         String validPattern = "[!@#\\$%\\^&*()_+\\-=\\{\\}\\[\\]:\";'\\,\\.\\?/\\\\\\|]";
         Matcher matcher = Pattern.compile(validPattern).matcher(userAccount);
         if (matcher.find()) {
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号不能包含特殊字符");
         }
         // 2.加密
         String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -116,7 +119,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 用户不存在
         if (user == null) {
             log.info("user login failed, userAccount cannot match userPassword");
-            return null;
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在");
         }
         // 3.用户脱敏
         User safetyUser = getSafetyUser(user);
