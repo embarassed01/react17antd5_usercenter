@@ -86,6 +86,13 @@ public class User implements Serializable {
     @TableLogic
     private Integer isDelete;
 
+    private String tags;
+
+    /**
+     * 详情描述
+     */
+    private String profile;
+
     /**
      * 星球编号
      */

@@ -1,14 +1,20 @@
 package com.example.demo.service.impl;
 
 import java.security.MessageDigest;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.demo.common.ErrorCode;
 import com.example.demo.constant.UserConstant;
@@ -16,6 +22,8 @@ import com.example.demo.exception.BusinessException;
 import com.example.demo.mapper.UserMapper;
 import com.example.demo.model.User;
 import com.example.demo.service.UserService;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -146,6 +154,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         safetyUser.setPlanetCode(originUser.getPlanetCode());
         safetyUser.setUserStatus(originUser.getUserStatus());
         safetyUser.setCreateTime(originUser.getCreateTime());
+        safetyUser.setTags(originUser.getTags());
+        safetyUser.setProfile(originUser.getProfile());;
         return safetyUser;
     }
 
@@ -154,6 +164,59 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         // 移除登录态
         request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
         return 1;
+    }
+
+    /**
+     * 根据标签搜索用户（SQL查询版）
+     * @param tagNameList
+     * @return
+     */
+    @Deprecated 
+    public List<User> searchUsersByTagsBySQL(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 数据库查询方式：
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        // 拼接and查询： like '%java%' and like '%python%'
+        for (String tagName: tagNameList) {
+            // 会自动在头尾添加模糊查询的%，所以我们不需要再手动添加了
+            queryWrapper = queryWrapper.like("tags", tagName);
+        }
+        List<User> userList = userMapper.selectList(queryWrapper);
+        return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
+    }
+
+    /**
+     * 根据标签搜索用户（内存查询版）
+     */
+    @Override
+    public List<User> searchUsersByTags(List<String> tagNameList) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        // 内存查询方式：
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        List<User> userList = userMapper.selectList(queryWrapper);  // 拿到所有用户的信息
+        Gson gson = new Gson();
+        // 在内存中判断是否包含要求的标签
+        // gson.toJson(tempTagNameList);  // 反序列化样例
+        // return userList.stream().map(this::getSafetyUser).collect(Collectors.toList());
+        return userList.stream().filter(user -> {
+            String tagsStr = user.getTags();
+            // if (StringUtils.isBlank(tagsStr)) { return false; }
+            Set<String> tempTagNameSet = gson.fromJson(tagsStr, new TypeToken<Set<String>>(){}.getType());
+            // Optional消除一些没有意义的if分支。if分支越多，复杂度越多
+            tempTagNameSet = Optional.ofNullable(tempTagNameSet).orElse(new HashSet<>());  // 给一个默认值
+            for (String tagName: tagNameList) {
+                if (!tempTagNameSet.contains(tagName)) {
+                    return false;
+                }
+            }
+            return true;
+        }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
 }

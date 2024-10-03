@@ -1,5 +1,7 @@
 package com.example.demo.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.demo.model.User;
 
@@ -42,5 +44,12 @@ public interface UserService extends IService<User> {
      * @return 
      */
     int userLogout(HttpServletRequest request);
+
+    /**
+     * 根据标签搜索用户，必须全 and
+     * @param tagNameList 用户要拥有的标签
+     * @return
+     */
+    List<User> searchUsersByTags(List<String> tagNameList);
 
 }

@@ -15,13 +15,47 @@ server:
   # 统一将后端添加一个前缀/api (指定接口全局api)
   servlet:
     context-path: /api
+springdoc:   # ip:port/api/doc.html  (/api/doc.html#/home)
+  swagger-ui:
+    # path配置swagger-ui.html  UI界面的访问路径，默认值
+    path: /swagger-ui.html
+    # tags-sorter接口文档中的tags排序规则，默认alpha（字母顺序）
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    # path配置api-docs的访问路径，默认 /v3/api-docs
+    path: /v3/api-docs
+  group-configs:
+    # group-config配置分组信息
+    - group: 'default'
+      # group分组名称
+      paths-to-match: '/**'
+      # paths-to-match配置要匹配的路径，默认/**
+      packages-to-scan: com.example.demo.controller
+      # packages-to-scan配置要扫描的包的路径，直接配置为Controller类所在的包名即可
+knife4j:
+  enable: true 
+  # true以启用Knife4j增强功能，将在应用程序中启用Knife4j UI
+  setting:
+    language: zh_cn
+    # language设置Knife4j UI语言，可选zh_cn / en
+  production: false 
+  # 开启生产环境屏蔽
+  basic:
+    # 是否启用登录认证
+    enable: false 
+    username: admin  # 自定义
+    password: 123456
 mybatis-plus:
   configuration:
     # 不自动转换 驼峰和下划线 sql变量命令
     map-underscore-to-camel-case: false
+    # 方便调试，可以生成所有sql语句等细节，调试很重要！！
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       logic-delete-field: isDelete  # 全局逻辑删除的实体字段
       logic-delete-value: 1  # 逻辑已删除值（默认为1）
       logic-not-delete-value: 0  # 逻辑未删除值（默认0）
+
 

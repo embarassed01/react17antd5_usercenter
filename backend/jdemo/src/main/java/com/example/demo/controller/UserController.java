@@ -1,14 +1,15 @@
 package com.example.demo.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -27,6 +28,7 @@ import jakarta.servlet.http.HttpServletRequest;
   
 /**
  * 用户接口
+ * //@CrossOrigin(origins = { "http://localhost:5173" }) 
  */
 @RestController 
 @RequestMapping("/user") 
@@ -120,6 +122,15 @@ public class UserController {
         //  在删除时自动转换为调用更新
         boolean result = userService.removeById(id);
         return ResultUtils.success(result);
+    }
+
+    @GetMapping("/search/tags") 
+    public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
+        if (org.springframework.util.CollectionUtils.isEmpty(tagNameList)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        List<User> userList = userService.searchUsersByTags(tagNameList);
+        return ResultUtils.success(userList);
     }
 
     /**
