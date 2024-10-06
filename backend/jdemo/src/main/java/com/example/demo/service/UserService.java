@@ -3,6 +3,7 @@ package com.example.demo.service;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.demo.constant.UserConstant;
 import com.example.demo.model.User;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,4 +53,31 @@ public interface UserService extends IService<User> {
      */
     List<User> searchUsersByTags(List<String> tagNameList);
 
+    /**
+     * 更新用户信息
+     * @param user
+     * @param loginUser
+     * @return
+     */
+    int updateUser(User user, User loginUser);
+
+    /**
+     * 获取当前登录用户信息
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
+
+    /**
+     * 是否为管理员
+     * @param request
+     * @return
+     */
+    boolean isAdmin(HttpServletRequest request);
+
+    /**
+     * 是否为管理员 重载接口
+     * @param loginUser
+     * @return
+     */
+    boolean isAdmin(User loginUser);
 }

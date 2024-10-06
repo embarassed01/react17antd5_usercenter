@@ -219,4 +219,51 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }).map(this::getSafetyUser).collect(Collectors.toList());
     }
 
+    @Override 
+    public int updateUser(User user, User loginUser) {
+        long userId = user.getId();
+        if (userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // todo 补充校验，如果用户没有传任何要更新的值，就直接报错，不用执行更新语句
+        // 如果是管理员，允许更新其他任意用户
+        // 如果不是管理员，只允许更新当前（自己的）信息
+        if (!isAdmin(loginUser) && userId != loginUser.getId()) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        User oldUser = userMapper.selectById(userId);
+        if (oldUser == null) {
+            throw new BusinessException(ErrorCode.NULL_ERROR);
+        }
+        return userMapper.updateById(user);
+    }
+
+    @Override 
+    public User getLoginUser(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (userObj == null) {
+            throw new BusinessException(ErrorCode.NO_AUTH);
+        }
+        return (User) userObj;
+    }
+
+    @Override 
+    public boolean isAdmin(User loginUser) {
+        return loginUser != null && loginUser.getUserRole() == UserConstant.ADMIN_ROLE;
+    }
+
+    @Override 
+    public boolean isAdmin(HttpServletRequest request) {
+        // 仅管理员
+        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        User user = (User) userObj;
+        if (user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
+            return false;
+        }
+        return true;
+    }
+
 }

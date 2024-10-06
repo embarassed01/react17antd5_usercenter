@@ -1,10 +1,12 @@
 package com.example.demo.controller;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +15,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.demo.common.BaseResponse;
 import com.example.demo.common.ErrorCode;
 import com.example.demo.common.ResultUtils;
@@ -25,6 +30,7 @@ import com.example.demo.service.UserService;
 
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
   
 /**
  * 用户接口
@@ -32,10 +38,14 @@ import jakarta.servlet.http.HttpServletRequest;
  */
 @RestController 
 @RequestMapping("/user") 
+@Slf4j
 public class UserController {
     
     @Resource 
     private UserService userService;
+
+    @Resource 
+    private RedisTemplate<String, Object> redisTemplate;
     
     @PostMapping("/register") 
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
@@ -96,7 +106,7 @@ public class UserController {
 
     @GetMapping("/search") 
     public BaseResponse<List<User>> searchUsers(String username, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
 
@@ -109,9 +119,22 @@ public class UserController {
         return ResultUtils.success(list);
     }
 
+    @PostMapping("/update") 
+    public BaseResponse<Integer> updateUser(@RequestBody User user, HttpServletRequest request) {
+        // 1.校验参数是否为空
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 外面做一次鉴权
+        User loginUser = userService.getLoginUser(request);
+        // 里面再做一次鉴权
+        int result = userService.updateUser(user, loginUser);
+        return ResultUtils.success(result);
+    }
+
     @PostMapping("/delete") 
     public BaseResponse<Boolean> deleteUser(@RequestBody long id, HttpServletRequest request) {
-        if (!isAdmin(request)) {
+        if (!userService.isAdmin(request)) {
             throw new BusinessException(ErrorCode.NO_AUTH);
         }
 
@@ -126,7 +149,7 @@ public class UserController {
 
     @GetMapping("/search/tags") 
     public BaseResponse<List<User>> searchUsersByTags(@RequestParam(required = false) List<String> tagNameList) {
-        if (org.springframework.util.CollectionUtils.isEmpty(tagNameList)) {
+        if (CollectionUtils.isEmpty(tagNameList)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         List<User> userList = userService.searchUsersByTags(tagNameList);
@@ -134,18 +157,37 @@ public class UserController {
     }
 
     /**
-     * 是否为管理员
+     * 推荐api，搞个分页page
+     * @param pageSize 每页大小
+     * @param pageNum 第几页
      * @param request
      * @return
      */
-    private boolean isAdmin(HttpServletRequest request) {
-        // 仅管理员
-        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-        User user = (User) userObj;
-        if (user == null || user.getUserRole() != UserConstant.ADMIN_ROLE) {
-            return false;
+    @GetMapping("/recommend") 
+    public BaseResponse<Page<User>> recommendUsers(long pageSize, long pageNum, HttpServletRequest request) {
+        // 如果有缓存，直接读
+        User loginUser = userService.getLoginUser(request);
+        String redisKey = String.format("yupao:user:recommend:%d", loginUser.getId());
+        ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+
+        @SuppressWarnings("unchecked")
+        Page<User> userPage = (Page<User>) valueOperations.get(redisKey);
+
+        if (userPage != null) {
+            return ResultUtils.success(userPage);
         }
-        return true;
+
+        // 无缓存，查数据库
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        userPage = userService.page(new Page<>(pageNum, pageSize), queryWrapper);
+        // 写缓存  捕获异常，不影响正常查询
+        try {
+            valueOperations.set(redisKey, userPage, 100000, TimeUnit.MILLISECONDS);  // 设置过期时间（必需的）
+        } catch (Exception e) {
+            log.error("redis set key error", e);
+        }
+
+        return ResultUtils.success(userPage);
     }
 
 }
