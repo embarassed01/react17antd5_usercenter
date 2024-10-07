@@ -4,6 +4,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -31,23 +33,40 @@ public class PreCacheJob {
     @Resource 
     private RedisTemplate<String, Object> redisTemplate;
 
+    @Resource 
+    private RedissonClient redissonClient;
+
     // 重点用户
     private List<Long> mainUserList = Arrays.asList(7L);
     
     // 每天执行，加载预热推荐用户
-    @Scheduled(cron = "32 33 21 * * *") 
+    @Scheduled(cron = "32 18 11 * * *") 
     public void doCacheRecommendUser() {
-        for (Long userId : mainUserList) {
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            Page<User> userPage = userService.page(new Page<>(1, 100), queryWrapper);
-            String redisKey = String.format("yupao:user:recommend:%d", userId);
-            ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
-            // 写缓存
-            try {
-                valueOperations.set(redisKey, userPage, 100000, TimeUnit.MILLISECONDS);
-            } catch (Exception e) {
-                log.error("redis set key error", e);
+        RLock lock = redissonClient.getLock("yupao:precachejob:docache:lock");
+        try {  // 只有一个线程能获取到锁
+            if (lock.tryLock(0, 30000L, TimeUnit.MILLISECONDS)) {  // 尝试获取锁，每天只执行一次，所以等待时间一定是0，没有获取到就不要再来尝试了，等第二天吧  // leaseTime30000是过期时间
+                System.out.println("getLock: " + Thread.currentThread().getId());
+                for (Long userId : mainUserList) {
+                    QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+                    Page<User> userPage = userService.page(new Page<>(1, 100), queryWrapper);
+                    String redisKey = String.format("yupao:user:recommend:%d", userId);
+                    ValueOperations<String, Object> valueOperations = redisTemplate.opsForValue();
+                    // 写缓存
+                    try {
+                        valueOperations.set(redisKey, userPage, 100000, TimeUnit.MILLISECONDS);
+                    } catch (Exception e) {
+                        log.error("redis set key error", e);
+                    }
+                }
+            } 
+        } catch (InterruptedException e) {
+            // e.printStackTrace();
+        } finally {
+            // 只能释放自己的锁
+            if (lock.isHeldByCurrentThread()) {
+                System.out.println("unLock: " + Thread.currentThread().getId());
+                lock.unlock();  // 释放锁
             }
-        }        
+        }
     }
 }
