@@ -6,7 +6,7 @@ spring:
   # DataSource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:33060/yupi
+    url: jdbc:mysql://localhost:3306/yupi   #33060
     username: root
     password: 123456
   # redis有16个数据库，默认就是0库
@@ -15,7 +15,7 @@ spring:
     redis:
       host: 127.0.0.1
       database: 0
-      port: 16379
+      port: 6379  #16379
       password: 123456
       # timeout: 10000
       # client-type: lettuce

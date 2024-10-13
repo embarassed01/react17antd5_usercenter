@@ -13,14 +13,13 @@ public class PageRequest implements Serializable {
     /**
      * 页面大小
      */
-    protected int pageSize;
+    protected int pageSize = 10;
 
     /**
      * 当前是第几页
      */
-    protected int pageNum;
+    protected int pageNum = 1;
 
     // 序列化UID，可以使对象在序列化的时候保持唯一！
     private static final long serialVersionUID = 22L;
-
 }

@@ -11,14 +11,34 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 @Data
 public class TeamQuery extends PageRequest {
+    /**
+     * id
+     */
     private Long id;
 
+    /**
+     * 搜索关键词（同时对队伍名称和描述）
+     */
+    private String searchText;
+
+    /**
+     * 队伍名称
+     */
     private String name;
 
+    /**
+     * 描述
+     */
     private String description;
 
+    /**
+     * 最大人数
+     */
     private Integer maxNum;
 
+    /**
+     * 用户id
+     */
     private Long userId;
 
     /**
