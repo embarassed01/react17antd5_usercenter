@@ -3,8 +3,10 @@ package com.example.demo.service;
 import java.util.List;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.example.demo.common.BaseResponse;
 import com.example.demo.constant.UserConstant;
 import com.example.demo.model.User;
+import com.example.demo.model.vo.UserVO;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -80,4 +82,12 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean isAdmin(User loginUser);
+
+    /**
+     * 匹配用户
+     * @param num
+     * @param loginUser
+     * @return
+     */
+    List<User> matchUsers(long num, User loginUser);
 }

@@ -5,6 +5,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.xmlbeans.impl.xb.xsdschema.Attribute.Use;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +26,7 @@ import com.example.demo.exception.BusinessException;
 import com.example.demo.model.User;
 import com.example.demo.model.request.UserLoginRequest;
 import com.example.demo.model.request.UserRegisterRequest;
+import com.example.demo.model.vo.UserVO;
 import com.example.demo.service.UserService;
 
 import jakarta.annotation.Resource;
@@ -187,6 +189,22 @@ public class UserController {
         }
 
         return ResultUtils.success(userPage);
+    }
+
+    /**
+     * 获取最匹配的用户
+     * 
+     * @param num
+     * @param request
+     * @return
+     */
+    @GetMapping("/match")
+    public BaseResponse<List<User>> matchUsers(long num, HttpServletRequest request) {
+        if (num <= 0 || num > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User loginUser = userService.getLoginUser(request);
+        return ResultUtils.success(userService.matchUsers(num, loginUser));
     }
 
 }

@@ -64,6 +64,9 @@ public class UserVO {
      */
     private Date updateTime;
 
+    /**
+     * 标签jsons
+     */
     private String tags;
 
     /**

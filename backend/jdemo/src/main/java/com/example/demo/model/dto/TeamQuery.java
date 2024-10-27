@@ -1,5 +1,7 @@
 package com.example.demo.model.dto;
 
+import java.util.List;
+
 import com.example.demo.common.PageRequest;
 
 import lombok.Data;
@@ -15,6 +17,11 @@ public class TeamQuery extends PageRequest {
      * id
      */
     private Long id;
+
+    /**
+     * id列表，支持对多个id查询
+     */
+    private List<Long> idList;
 
     /**
      * 搜索关键词（同时对队伍名称和描述）
